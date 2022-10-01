@@ -21,8 +21,6 @@ model = dict(
         out_channels=1,
         norm_cfg=norm_cfg,
         loss_decode=dict(type='MetricLoss', use_sigmoid=True, loss_name='loss_metric', loss_weight=1.0),
-        # loss_decode=[dict(type='MetricLoss', use_sigmoid=True, loss_name='loss_metric', loss_weight=3.0),
-        #              dict(type='CrossEntropyLoss', use_sigmoid=True, loss_name='loss_ce', class_weight=[20.], loss_weight=1.0)],
     ),
     auxiliary_head=dict(
         in_channels=384,
@@ -30,9 +28,7 @@ model = dict(
         threshold=0.5,
         out_channels=1,
         norm_cfg=norm_cfg,
-        loss_decode=dict(type='MetricLoss', use_sigmoid=True, loss_name='loss_metric', loss_weight=1.0),
-        # loss_decode=[dict(type='MetricLoss', use_sigmoid=True, loss_name='loss_metric', loss_weight=3.0),
-        #              dict(type='CrossEntropyLoss', use_sigmoid=True, loss_name='loss_ce', class_weight=[20.], loss_weight=1.0)],
+        loss_decode=dict(type='MetricLoss', use_sigmoid=True, loss_name='loss_metric', loss_weight=0.4),
     ))
 
 # AdamW optimizer, no weight decay for position embedding & layer norm in backbone
