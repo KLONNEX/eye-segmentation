@@ -259,11 +259,13 @@ class EncoderDecoder(BaseSegmentor):
             elif flip_direction == 'vertical':
                 output = output.flip(dims=(2, ))
 
-        return output
+        return torch.sigmoid(seg_logit).detach().cpu().numpy(), output
+        # return output
 
     def simple_test(self, img, img_meta, rescale=True):
         """Simple test with single image."""
-        seg_logit = self.inference(img, img_meta, rescale)
+        logit, seg_logit = self.inference(img, img_meta, rescale)
+        # seg_logit = self.inference(img, img_meta, rescale)
         if self.out_channels == 1:
             seg_pred = (seg_logit >
                         self.decode_head.threshold).to(seg_logit).squeeze(1)
@@ -276,7 +278,7 @@ class EncoderDecoder(BaseSegmentor):
         seg_pred = seg_pred.cpu().numpy()
         # unravel batch dim
         seg_pred = list(seg_pred)
-        return seg_pred
+        return logit, seg_pred
 
     def aug_test(self, imgs, img_metas, rescale=True):
         """Test with augmentations.
@@ -284,13 +286,16 @@ class EncoderDecoder(BaseSegmentor):
         Only rescale=True is supported.
         """
         # aug_test rescale all imgs back to ori_shape for now
+        print(len(imgs))
         assert rescale
         # to save memory, we get augmented seg logit inplace
-        seg_logit = self.inference(imgs[0], img_metas[0], rescale)
+        logits, seg_logit = self.inference(imgs[0], img_metas[0], rescale)
         for i in range(1, len(imgs)):
-            cur_seg_logit = self.inference(imgs[i], img_metas[i], rescale)
+            cur_logits, cur_seg_logit = self.inference(imgs[i], img_metas[i], rescale)
             seg_logit += cur_seg_logit
+            logits += cur_logits
         seg_logit /= len(imgs)
+        logits /= len(imgs)
         if self.out_channels == 1:
             seg_pred = (seg_logit >
                         self.decode_head.threshold).to(seg_logit).squeeze(1)
@@ -299,47 +304,4 @@ class EncoderDecoder(BaseSegmentor):
         seg_pred = seg_pred.cpu().numpy()
         # unravel batch dim
         seg_pred = list(seg_pred)
-        return seg_logit, seg_pred
-
-
-    #     return seg_logit, output
-    #
-    # def simple_test(self, img, img_meta, rescale=True):
-    #     """Simple test with single image."""
-    #     logit, seg_logit = self.inference(img, img_meta, rescale)
-    #     if self.out_channels == 1:
-    #         seg_pred = (seg_logit >
-    #                     self.decode_head.threshold).to(seg_logit).squeeze(1)
-    #     else:
-    #         seg_pred = seg_logit.argmax(dim=1)
-    #     if torch.onnx.is_in_onnx_export():
-    #         # our inference backend only support 4D output
-    #         seg_pred = seg_pred.unsqueeze(0)
-    #         return seg_pred
-    #     seg_pred = seg_pred.cpu().numpy()
-    #     # unravel batch dim
-    #     seg_pred = list(seg_pred)
-    #     return logit, seg_pred
-    #
-    # def aug_test(self, imgs, img_metas, rescale=True):
-    #     """Test with augmentations.
-    #
-    #     Only rescale=True is supported.
-    #     """
-    #     # aug_test rescale all imgs back to ori_shape for now
-    #     assert rescale
-    #     # to save memory, we get augmented seg logit inplace
-    #     seg_logit = self.inference(imgs[0], img_metas[0], rescale)
-    #     for i in range(1, len(imgs)):
-    #         cur_seg_logit = self.inference(imgs[i], img_metas[i], rescale)
-    #         seg_logit += cur_seg_logit
-    #     seg_logit /= len(imgs)
-    #     if self.out_channels == 1:
-    #         seg_pred = (seg_logit >
-    #                     self.decode_head.threshold).to(seg_logit).squeeze(1)
-    #     else:
-    #         seg_pred = seg_logit.argmax(dim=1)
-    #     seg_pred = seg_pred.cpu().numpy()
-    #     # unravel batch dim
-    #     seg_pred = list(seg_pred)
-    #     return seg_logit, seg_pred
+        return logits, seg_pred

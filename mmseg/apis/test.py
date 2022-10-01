@@ -90,8 +90,8 @@ def single_gpu_test(model,
 
     for batch_indices, data in zip(loader_indices, data_loader):
         with torch.no_grad():
-            # logits, result = model(return_loss=False, **data)
-            result = model(return_loss=False, **data)
+            logits, result = model(return_loss=False, **data)
+            # result = model(return_loss=False, **data)
 
         if show or out_dir:
             img_tensor = data['img'][0]
@@ -106,13 +106,21 @@ def single_gpu_test(model,
                 ori_h, ori_w = img_meta['ori_shape'][:-1]
                 img_show = mmcv.imresize(img_show, (ori_w, ori_h))
 
+                logits_dir = Path(out_dir, 'logits')
+                if not logits_dir.is_dir():
+                    logits_dir.mkdir(parents=True, exist_ok=True)
+
                 if out_dir:
                     out_file = osp.join(out_dir, img_meta['ori_filename'])
+                    logits_dir = Path(out_dir, 'logits')
+                    if not logits_dir.is_dir():
+                        logits_dir.mkdir(parents=True, exist_ok=True)
                 else:
                     out_file = None
 
-                # with Path('/4TB_second/perminov/hack/data/eye-segment/logits', Path(img_meta['ori_filename']).stem + '.pickle').open('wb') as file:
-                #     pickle.dump(logits, file)
+                if logits_dir.is_dir():
+                    with (logits_dir / (Path(img_meta['ori_filename']).stem + '.pickle')).open('wb') as file:
+                        pickle.dump(logits, file)
 
                 model.module.show_result(
                     img_show,
